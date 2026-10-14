@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>내가 우리반 타자왕</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
+<style>
+  /* Layout: 운동회 점수판 느낌. 왼쪽 연습 무대, 오른쪽 순위판. 폰에서는 세로로 쌓임. */
+  :root {
+    --bg: #FFF6E3;
+    --card: #FFFFFF;
+    --fg: #25304B;
+    --muted: #747D99;
+    --line: #EBDFC4;
+    --accent: #FF7A1A;
+    --accent-ink: #FFFFFF;
+    --sky: #2F7FE6;
+    --ok: #27A862;
+    --bad: #E0484F;
+    --gold: #F5B301;
+    --board: #2B3356;
+    --board-fg: #FFF6E3;
+    --board-line: #3E4772;
+    --display: 'Jua', 'Gowun Dodum', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    --body: 'Gowun Dodum', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #171C2E; --card: #222941; --fg: #F2EEE3; --muted: #A4ABC6; --line: #353D5E;
+      --accent: #FF9A4D; --accent-ink: #1B1407; --sky: #74AAFF; --ok: #4CCB84; --bad: #FF7079;
+      --gold: #FFC63A; --board: #10142A; --board-fg: #F2EEE3; --board-line: #2B3353;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #171C2E; --card: #222941; --fg: #F2EEE3; --muted: #A4ABC6; --line: #353D5E;
+    --accent: #FF9A4D; --accent-ink: #1B1407; --sky: #74AAFF; --ok: #4CCB84; --bad: #FF7079;
+    --gold: #FFC63A; --board: #10142A; --board-fg: #F2EEE3; --board-line: #2B3353;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  /* hidden 상태가 grid/flex 레이아웃 스타일보다 우선하도록 유지 */
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 17px; line-height: 1.5;
+    padding-block: 20px 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+
+  header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 10px 18px; }
+  .school { font-family: var(--display); font-size: 18px; letter-spacing: .04em; color: var(--sky); }
+  .school span { display: inline-block; background: var(--sky); color: #fff; border-radius: 999px; padding: 1px 10px; margin-right: 6px; font-size: 15px; }
+  h1 { font-family: var(--display); font-weight: 400; font-size: clamp(34px, 6vw, 56px); line-height: 1.05; margin: 2px 0 0; text-wrap: balance; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .tagline { color: var(--muted); font-size: 15px; }
+
+  .grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+
+  .stage { background: var(--card); border-radius: 22px; border: 2px solid var(--line); padding: 22px; display: grid; gap: 18px; min-width: 0; }
+
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  label { font-size: 14px; color: var(--muted); display: grid; gap: 4px; }
+  input[type=text] { font: inherit; padding: 10px 12px; border: 2px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--fg); min-width: 0; }
+  input[type=text]:focus { outline: 3px solid var(--sky); outline-offset: 1px; }
+  .seg { display: inline-flex; border: 2px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .seg button { font: inherit; font-size: 15px; padding: 8px 14px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--sky); color: #fff; }
+
+  .meters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .meter { background: var(--bg); border-radius: 14px; padding: 10px 12px; text-align: center; }
+  .meter b { display: block; font-family: var(--display); font-weight: 400; font-size: 32px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .meter small { color: var(--muted); font-size: 13px; }
+  .meter.time b { color: var(--accent); }
+
+  .track { height: 10px; background: var(--line); border-radius: 999px; overflow: hidden; }
+  .track i { display: block; height: 100%; width: 100%; background: var(--accent); border-radius: 999px; transition: width .25s linear; }
+
+  .target { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 3.4vw, 30px); line-height: 1.6; letter-spacing: .01em; word-break: keep-all; overflow-wrap: anywhere; min-height: 3.2em; }
+  .target .c { border-radius: 4px; padding: 0 1px; }
+  .target .c.ok { color: var(--ok); }
+  .target .c.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); text-decoration: underline wavy; }
+  .target .c.cur { background: color-mix(in srgb, var(--sky) 22%, transparent); border-bottom: 3px solid var(--sky); }
+  .hint { color: var(--muted); font-size: 14px; }
+
+  #typeInput { width: 100%; font-family: var(--display); font-size: clamp(22px, 3.4vw, 28px); padding: 14px 16px; border: 3px solid var(--sky); border-radius: 16px; background: var(--bg); color: var(--fg); }
+  #typeInput:read-only { cursor: pointer; }
+
+  .btn { font: inherit; font-family: var(--display); font-size: 20px; padding: 12px 26px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); cursor: pointer; box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 60%, #000 10%); }
+  .btn:active { transform: translateY(3px); box-shadow: none; }
+  .btn.ghost { background: transparent; color: var(--muted); box-shadow: none; border: 2px solid var(--line); font-size: 16px; padding: 8px 16px; }
+  .btn:focus-visible, .seg button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+  /* 순위판 */
+  .board { background: var(--board); color: var(--board-fg); border-radius: 22px; padding: 22px; min-width: 0; display: grid; gap: 14px; }
+  .board h2 { font-family: var(--display); font-weight: 400; font-size: 28px; margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .board h2 small { font-family: var(--body); font-size: 13px; color: color-mix(in srgb, var(--board-fg) 60%, transparent); font-weight: 400; }
+  .king { background: linear-gradient(135deg, var(--gold), #FF8A3D); color: #2A1B00; border-radius: 16px; padding: 14px 16px; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+  .king .crown { font-size: 34px; line-height: 1; }
+  .king .name { font-family: var(--display); font-size: 24px; line-height: 1.1; }
+  .king .sub { font-size: 13px; opacity: .85; }
+  .king .score { font-family: var(--display); font-size: 30px; font-variant-numeric: tabular-nums; }
+  .king.empty { background: var(--board-line); color: var(--board-fg); grid-template-columns: 1fr; text-align: center; font-size: 15px; }
+  ol.ranks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  ol.ranks li { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: color-mix(in srgb, var(--board-line) 60%, transparent); font-variant-numeric: tabular-nums; }
+  ol.ranks li.me { outline: 2px solid var(--gold); }
+  ol.ranks .n { font-family: var(--display); font-size: 20px; text-align: center; color: var(--gold); }
+  ol.ranks .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  ol.ranks .who small { color: color-mix(in srgb, var(--board-fg) 60%, transparent); margin-left: 6px; font-size: 12px; }
+  ol.ranks .pts { font-family: var(--display); font-size: 20px; }
+  ol.ranks .pts small { font-family: var(--body); font-size: 12px; color: color-mix(in srgb, var(--board-fg) 60%, transparent); margin-left: 4px; }
+  .board-foot { font-size: 12px; color: color-mix(in srgb, var(--board-fg) 55%, transparent); display: flex; flex-wrap: wrap; gap: 8px 14px; justify-content: space-between; align-items: center; }
+  .board-foot button { font: inherit; font-size: 12px; background: none; border: 0; color: inherit; text-decoration: underline; cursor: pointer; padding: 0; }
+  .confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
+  .confirm input { font: inherit; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--board-line); background: var(--board-line); color: var(--board-fg); width: 90px; }
+
+  /* 결과 */
+  .result { position: fixed; inset: 0; background: color-mix(in srgb, var(--board) 70%, transparent); display: grid; place-items: center; padding: 16px; z-index: 10; }
+  .result .card { background: var(--card); color: var(--fg); border-radius: 24px; padding: 28px 26px; width: min(460px, 100%); display: grid; gap: 14px; text-align: center; animation: pop .35s cubic-bezier(.2,1.4,.4,1); }
+  .result h3 { font-family: var(--display); font-weight: 400; font-size: 30px; margin: 0; text-wrap: balance; }
+  .result .big { font-family: var(--display); font-size: 64px; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .result .big small { font-size: 20px; color: var(--muted); font-family: var(--body); }
+  .result .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .result .stats div { background: var(--bg); border-radius: 12px; padding: 10px; }
+  .result .stats b { font-family: var(--display); font-weight: 400; font-size: 26px; display: block; }
+  .result .stats small { color: var(--muted); font-size: 13px; }
+  .result .msg { font-size: 16px; }
+  .result .msg strong { color: var(--sky); }
+  @keyframes pop { from { transform: scale(.8); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .result .card { animation: none; } .track i { transition: none; } }
+
+  #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 11; }
+
+  /* 제주 블록 월드: 바다 청록색, 감귤색, 현무암색 */
+  :root {
+    --bg: #e7f3ef; --card: #fffcf2; --fg: #203c40; --muted: #405b5d;
+    --line: #7ca3a0; --accent: #f5a135; --accent-ink: #38230d;
+    --sky: #086e78; --ok: #24732c; --bad: #b32c35; --gold: #ffd27a;
+    --board: #293d43; --board-fg: #fffaf0; --board-line: #405b61;
+    --display: 'Jua', 'Malgun Gothic', sans-serif;
+    --body: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    color-scheme: light;
+  }
+  body {
+    background: #d6efee;
+    background-image: linear-gradient(#b8e5ed 0%, #e7f5ed 78%);
+    background-attachment: fixed;
+    padding-block: 16px 70px;
+    min-height: 100vh;
+    font-size: 18px;
+    line-height: 1.65;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+  .world { position: fixed; inset: auto 0 0; width: 100%; height: 47vh; min-height: 260px; z-index: -1; pointer-events: none; }
+  .cloud { position: fixed; z-index: -1; width: 150px; height: 26px; background: #eff8eb; box-shadow: 28px -22px 0 -2px #eff8eb, 65px 0 #eff8eb, 22px 7px #91bdc4; opacity: .7; }
+  .cloud.one { top: 105px; left: 4%; }
+  .cloud.two { top: 190px; right: 9%; transform: scale(.7); }
+  .wrap { max-width: 1240px; gap: 16px; }
+  header { justify-content: center; text-align: center; gap: 5px; padding: 0; }
+  header > div:first-child { width: 100%; }
+  .school { color: #214d54; font-size: 17px; letter-spacing: .02em; margin-bottom: 6px; }
+  .school span { background: #116c75; border: 2px solid #24484d; border-radius: 0; color: #fffaf0; font-size: 16px; padding: 2px 10px; margin-right: 10px; box-shadow: 3px 3px 0 #77b5b8; }
+  h1 { font-family: 'Galmuri11', var(--display); font-size: clamp(30px, 4vw, 46px); color: #fffdf3; line-height: 1.25; letter-spacing: -.035em; text-shadow: 2px 0 #24444a, -2px 0 #24444a, 0 -2px #24444a, 0 2px #24444a, 3px 4px #24444a; }
+  h1 em { color: #ffbb55; }
+  .tagline { color: #274f55; font-size: 17px; font-weight: 600; margin-top: 0; }
+  .world-status { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font: 17px var(--display); color: #21555b; border-bottom: 2px solid #73aeb2; padding-bottom: 7px; }
+  .world-status span:first-child::before { content: ''; display: inline-block; width: 10px; height: 10px; background: #e58920; margin-right: 8px; box-shadow: 2px 2px #fff0c6; }
+  .grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; }
+  .stage, .board, .result .card { border: 4px solid #344b50; border-radius: 0; box-shadow: 7px 7px 0 #24464a44, inset 3px 3px 0 #ffffff65, inset -3px -3px 0 #00000017; }
+  .stage { padding: 26px; gap: 20px; position: relative; border-top: 12px solid #198b93; background: var(--card); }
+  .stage::before { content: ''; position: absolute; top: -12px; left: 0; right: 0; height: 4px; background: repeating-linear-gradient(90deg, #7ed8d2 0 22px, #45b8bf 22px 44px, #b2eee1 44px 66px); }
+  .panel-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; border-bottom: 2px solid #c5d7ce; padding-bottom: 14px; gap: 8px; }
+  .panel-heading h2 { font: 29px var(--display); margin: 0; }
+  .panel-heading small { color: #375f62; font: 17px var(--display); }
+  .setup-row { align-items: end; gap: 16px; }
+  .setup-row > label:first-child { flex: 1; min-width: 140px; }
+  label { gap: 8px; font-size: 18px; font-weight: bold; }
+  input[type=text], .confirm input { border-radius: 0; border: 2px solid #6e9698; box-shadow: inset 3px 3px #263a2915; background: #edf5ef; }
+  #nameInput { width: 100%; font-size: 20px; }
+  #nameInput::placeholder { color: #50696a; opacity: 1; }
+  input:focus-visible, .btn:focus-visible, .seg button:focus-visible { outline: 3px solid #d69725; outline-offset: 3px; }
+  .seg { border: 2px solid #3d7076; border-radius: 0; background: #e0eeea; }
+  .seg button { padding: 11px 16px; color: #294f53; font-size: 19px; font-weight: bold; box-shadow: inset 2px 2px #ffffff65, inset -2px -2px #00000015; }
+  .seg button[aria-pressed="true"] { background: #0d737c; color: #fff; }
+  .meters { gap: 12px; }
+  .meter { border: 2px solid #9abdb7; border-radius: 0; background: #e2f0e9; padding: 15px 6px 12px; box-shadow: inset 2px 2px #fff8; }
+  .meter b { font-size: 40px; margin-bottom: 6px; }
+  .meter small { font-size: 17px; color: #354e50; font-weight: bold; }
+  .meter.time { background: #fff0d8; border-color: #d8b476; }
+  .meter.time b { color: #a5510d; }
+  .meter:nth-child(2) b { color: #086c78; }
+  .meter:nth-child(3) b { color: #267246; }
+  .track { border-radius: 0; height: 19px; border: 3px solid #31585e; background: #263e43; }
+  .track i { border-radius: 0; background: repeating-linear-gradient(90deg, #31b9b1 0 21px, #087b84 21px 24px); box-shadow: inset 0 3px #8aebe0; }
+  .sentence-label { font: 18px var(--display); color: #3c6160; margin-bottom: -8px; line-height: 1.6; }
+  .target { background: #fffef8; border: 2px solid #bdcfc5; border-left: 6px solid #168a91; padding: 19px; font-family: var(--body); font-weight: 700; font-size: clamp(28px, 2.5vw, 34px); line-height: 1.8; min-height: 145px; }
+  .target .c { border-radius: 0; }
+  .target .c.cur { background: #c4eae1; border-bottom-color: #097b83; }
+  #typeInput { border-radius: 0; border: 3px solid #488a8d; background: #eff7f1; font-family: var(--body); font-weight: 600; font-size: 28px; padding: 17px; box-shadow: inset 3px 3px #243b2417; }
+  #typeInput:read-only { opacity: 1; background: #e9eeea; }
+  #typeInput::placeholder { color: #536765; font-size: 22px; opacity: 1; }
+  .hint { font-size: 17px; color: #3e5657; line-height: 1.8; }
+  .btn { border: 3px solid #86521c; border-radius: 0; background: #f5a135; color: #38230d; padding: 14px 32px; font-size: 25px; text-shadow: none; box-shadow: inset 3px 3px #ffcf7b, inset -3px -3px #cd791f, 0 4px #644223; }
+  .btn:hover { background: #ffb751; }
+  .btn:active { transform: translateY(3px); box-shadow: inset 2px 2px #0003; }
+  .btn.ghost { border-radius: 0; background: #e0eae5; border: 2px solid #6e9392; color: #2e5053; text-shadow: none; box-shadow: inset 2px 2px #fff8, inset -2px -2px #0002; font-size: 20px; }
+  .board { padding: 25px; gap: 20px; background-color: #293d43; background-image: repeating-linear-gradient(0deg, transparent 0 38px, #ffffff03 38px 40px); }
+  .board h2 { font-size: 30px; align-items: start; flex-wrap: wrap; border-bottom: 2px solid #68828a; padding-bottom: 16px; }
+  .board h2 small { width: 100%; font-size: 17px; color: #e0eeeb; }
+  .board-kicker { font: 18px var(--display); color: #ffc879; margin-bottom: -7px; }
+  .king { border-radius: 0; border: 2px solid #daa557; background: #ffd28a; box-shadow: inset 2px 2px #fff5; }
+  .king .name { font-size: 27px; overflow-wrap: anywhere; }
+  .king .sub { font-size: 16px; opacity: 1; }
+  .king .score { font-size: 30px; }
+  .king.empty { border: 2px dashed #7da6a8; color: #fffaf0; background: #36545a; font-size: 19px; min-height: 150px; padding: 26px 18px; line-height: 1.9; }
+  ol.ranks { gap: 8px; }
+  ol.ranks:empty { display: none; }
+  ol.ranks li { border-radius: 0; border: 1px solid #6c9094; background: #36535a; padding: 12px 8px; gap: 7px; font-size: 20px; }
+  ol.ranks .n, ol.ranks .pts { font-size: 26px; }
+  ol.ranks .pts small { display: block; margin-left: 0; font-size: 16px; color: #e1eeea; text-align: right; }
+  .board-foot { border-top: 2px solid #68828a; padding-top: 18px; color: #e1eae6; font-size: 17px; line-height: 1.85; gap: 17px; }
+  .board-foot button { color: #ffcf8b; font-size: 17px; font-weight: bold; padding: 8px 0; }
+  .confirm { background: #1f3238; padding: 14px; border: 2px solid #6c9094; font-size: 17px; }
+  .confirm input { color: #fffaf0; background: #36545a; font-size: 22px; width: 120px; }
+  .confirm .btn.ghost { background: #405e64; }
+  #confirmError { color: #ffd0b3; }
+  .world-footer { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 16px; color: #214b51; font-size: 18px; font-weight: bold; text-align: center; padding-top: 8px; }
+  .world-footer > span { background: #fffaf0ed; padding: 8px 14px; border: 2px solid #7ca3a0; }
+  .inventory { display: flex; padding: 4px; border: 3px solid #344b50; background: #8ba6a3; box-shadow: 3px 3px #33412b55; gap: 4px; }
+  .slot { width: 41px; height: 41px; border: 2px solid #58797d; background: #d0e4da; box-shadow: inset 2px 2px #fff5; display: grid; place-items: center; }
+  .slot:first-child { outline: 2px solid #f2f6dc; outline-offset: -2px; }
+  .block { width: 21px; height: 23px; background: repeating-conic-gradient(#896344 0% 25%, #765238 0% 50%) 0 0 / 10px 10px; border-top: 7px solid #6caa38; box-shadow: 3px 3px #394128; }
+  .block.stone { border-top-color: #89979b; background: repeating-conic-gradient(#596970 0% 25%, #435158 0% 50%) 0 0 / 10px 10px; }
+  .block.tangerine { border: 0; background: #f49c25; box-shadow: inset -4px -4px #d16d15, 3px 3px #394128; position: relative; }
+  .block.tangerine::before { content: ''; position: absolute; width: 9px; height: 5px; background: #3e8047; top: -4px; left: 9px; }
+  .block.gem { width: 17px; height: 17px; border: 3px solid #328b81; background: #85e4ce; transform: rotate(45deg); box-shadow: 3px 3px #28605a; }
+  .result { background: #1e343bd9; overflow-y: auto; }
+  .result .card { border-top: 10px solid #15949a; background: var(--card); margin: auto; width: min(540px, 100%); }
+  .result .stats div { border-radius: 0; border: 2px solid #93b8b2; background: #e3f0e9; }
+  .result .stats b { font-size: 34px; }
+  .result .stats small { font-size: 17px; }
+  .result .msg { font-size: 19px; line-height: 1.8; }
+  .result .big { color: #a6530c; text-shadow: 3px 3px #ffe1aa; }
+  .result h3 { font-size: 32px; }
+  @media (max-width: 820px) {
+    .grid { grid-template-columns: 1fr; }
+    .wrap { max-width: 650px; }
+    .world-status { font-size: 17px; }
+    .board { gap: 14px; }
+    .king.empty { min-height: 100px; }
+  }
+  @media (max-width: 460px) {
+    body { padding-inline: 12px; padding-top: 12px; }
+    .school { font-size: 16px; }
+    .school span { display: inline-block; margin: 0 8px 5px 0; }
+    h1 { font-size: 30px; }
+    .tagline { font-size: 16px; max-width: 330px; }
+    .stage, .board { padding: 16px; }
+    .setup-row { gap: 12px; }
+    .setup-row > label:first-child { flex-basis: 100%; }
+    .seg button { padding: 10px 12px; }
+    .meters { gap: 6px; }
+    .meter b { font-size: 34px; }
+    .meter small { font-size: 16px; }
+    .target { padding: 12px; font-size: 27px; }
+    .panel-heading small { font-size: 16px; }
+    .sentence-label { font-size: 17px; }
+    #typeInput { font-size: 26px; padding: 13px; }
+    #typeInput::placeholder { font-size: 20px; }
+    .board h2 { font-size: 28px; }
+    .king { grid-template-columns: auto minmax(0, 1fr); }
+    .king .score { grid-column: 2; }
+    .king.empty { grid-template-columns: 1fr; }
+    .world-footer { gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="cloud one" aria-hidden="true"></div>
+<div class="cloud two" aria-hidden="true"></div>
+<svg class="world" aria-hidden="true" viewBox="0 0 1440 400" preserveAspectRatio="xMidYMax slice" shape-rendering="crispEdges">
+  <path fill="#9bcac2" d="M0 160h90v-40h100v60h120v-60h100v-40h100v70h160v-50h100v60h90v-90h130v50h100v-40h100v80h150v240H0z"/>
+  <path fill="#53b4b8" d="M0 250h140v-60h100v35h140v-45h100v70h140v-30h120v30h150v-55h120v-35h120v65h120v-40h90v215H0z"/>
+  <path fill="#208e99" d="M0 315h140v-35h160v40h250v-20h190v20h260v-35h150v30h290v85H0z"/>
+  <path fill="#b4e9df" d="M220 273h75v5h-75zM530 285h100v5H530zM880 265h80v5h-80zM1120 297h100v5h-100z"/>
+  <path fill="#795538" d="M75 250h25v110H75zM1300 210h28v145h-28z"/>
+  <path fill="#416d38" d="M25 190h35v-35h60v35h35v80H25zM1245 140h30v-35h75v35h35v95h-140z"/>
+  <path fill="#568541" d="M25 190h35v-35h60v35h-30v35H25zM1245 140h30v-35h75v35h-40v40h-65z"/>
+  <path fill="#f5a12e" d="M45 210h14v14H45zM100 235h14v14h-14zM85 183h12v12H85zM1270 175h14v14h-14zM1335 150h14v14h-14zM1320 210h14v14h-14z"/>
+  <path fill="#45565b" d="M0 365h1440v35H0z"/>
+  <path fill="#e4d7b5" d="M0 350h1440v18h-80v9h-80v-9h-140v12h-80v-12H930v9h-90v-9H680v12h-80v-12H440v9h-80v-9H180v12h-80v-12H0z"/>
+  <path fill="#66797d" d="M20 384h40v10H20zM180 375h30v10h-30zM340 388h50v12h-50zM530 380h35v10h-35zM710 385h45v10h-45zM950 380h40v10h-40zM1150 387h40v10h-40zM1360 380h30v10h-30z"/>
+</svg>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="school"><span>동홍초등학교</span>5학년 쉬는시간 타자 대회</div>
+      <h1>내가 우리반 <em>타자왕</em></h1>
+    </div>
+    <div class="tagline">한 글자씩 쌓아 올리는 실력! 우리 반 타자왕에 도전해 봐.</div>
+  </header>
+  <div class="world-status"><span>동홍초 5학년 월드</span><span>오늘의 모험 · 타자 연습</span></div>
+  <div class="grid">
+    <section class="stage" aria-label="타자 연습">
+      <div class="panel-heading"><h2>타자 연습장</h2><small>한 글자씩, 차근차근!</small></div>
+      <div class="row setup-row">
+        <label>플레이어 이름 <input type="text" id="nameInput" maxlength="8" placeholder="이름을 입력하세요" autocomplete="off"></label>
+        <label>도전 시간
+          <div class="seg" id="timeSeg" role="group" aria-label="연습 시간">
+            <button type="button" data-t="30" aria-pressed="false">30초</button>
+            <button type="button" data-t="60" aria-pressed="true">60초</button>
+          </div>
+        </label>
+      </div>
+
+      <div class="row">
+        <button class="btn" id="startBtn" type="button">시작!</button>
+        <button class="btn ghost" id="stopBtn" type="button" hidden>그만하기</button>
+        <span class="hint" id="doneCount"></span>
+      </div>
+
+      <div class="meters">
+        <div class="meter time"><b id="mTime">60</b><small>남은 시간(초)</small></div>
+        <div class="meter"><b id="mCpm">0</b><small>타/분</small></div>
+        <div class="meter"><b id="mAcc">100%</b><small>정확도</small></div>
+      </div>
+      <div class="track" aria-hidden="true"><i id="bar"></i></div>
+
+      <div class="sentence-label">오늘의 문장 · 아래 문장을 똑같이 입력해요</div>
+      <div class="target" id="target" aria-live="polite"></div>
+      <input type="text" id="typeInput" placeholder="여기를 눌러 시작하세요" autocomplete="off" autocapitalize="off" spellcheck="false" readonly aria-label="입력칸" aria-describedby="hint">
+      <div class="hint" id="hint" role="status">이름을 쓴 뒤 시작 버튼이나 입력칸을 누르세요. 첫 글자를 입력하면 시간이 줄어들어요.</div>
+    </section>
+
+    <aside class="board" aria-label="순위판">
+      <div class="board-kicker">도전! 동홍초 타자왕</div>
+      <h2>우리 반 명예의 전당 <small>순위판 · 점수 = 타/분 × 정확도</small></h2>
+      <div class="king empty" id="king">아직 타자왕이 없어요. 첫 번째 타자왕이 되어 보세요!</div>
+      <ol class="ranks" id="ranks"></ol>
+      <div class="board-foot">
+        <span id="boardNote">이 컴퓨터에 기록된 순위예요. 한 사람당 가장 좋은 기록만 남아요. (같은 이름은 같은 사람으로 봐요)</span>
+        <button type="button" id="resetBtn">선생님용: 순위 초기화</button>
+      </div>
+      <div class="confirm" id="confirmBox" hidden>
+        <span>순위를 지우려면 선생님 비밀번호를 입력하고 확인을 누르세요.</span>
+        <input type="password" id="confirmInput" inputmode="numeric" autocomplete="off" aria-label="순위 초기화 비밀번호" aria-describedby="confirmError">
+        <button type="button" class="btn ghost" id="confirmBtn" style="color:var(--board-fg)">확인</button>
+        <button type="button" class="btn ghost" id="cancelBtn" style="color:var(--board-fg)">취소</button>
+        <span id="confirmError" role="alert" hidden>비밀번호가 맞지 않아요. 다시 입력해 주세요.</span>
+      </div>
+    </aside>
+  </div>
+  <footer class="world-footer"><div class="inventory" aria-hidden="true"><span class="slot"><i class="block tangerine"></i></span><span class="slot"><i class="block stone"></i></span><span class="slot"><i class="block gem"></i></span></div><span>차곡차곡 쌓이는 실력, 오늘도 한 블록 성장!</span></footer>
+</div>
+
+<div class="result" id="result" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="rTitle">
+    <h3 id="rTitle">끝!</h3>
+    <div class="big"><span id="rScore">0</span><small> 점</small></div>
+    <div class="stats">
+      <div><b id="rCpm">0</b><small>타/분</small></div>
+      <div><b id="rAcc">0%</b><small>정확도</small></div>
+    </div>
+    <div class="msg" id="rMsg"></div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="againBtn" type="button">한 번 더!</button>
+      <button class="btn ghost" id="closeBtn" type="button">닫기</button>
+    </div>
+  </div>
+</div>
+<canvas id="confetti" hidden></canvas>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { getFirestore, collection, doc, onSnapshot, runTransaction, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+// Firebase 프로젝트 typingking
+const firebaseConfig = {
+  apiKey: "AIzaSyC3VtGVxUgTOHievCPivp--1OEwNm9VuQ4",
+  authDomain: "typingking.firebaseapp.com",
+  projectId: "typingking",
+  storageBucket: "typingking.firebasestorage.app",
+  messagingSenderId: "441431300462",
+  appId: "1:441431300462:web:8c6d3737e52ba39e5dc97f"
+};
+const db = getFirestore(initializeApp(firebaseConfig));
+const scoresCol = collection(db, "scores");
+
+(function () {
+  const SENTENCES = [
+    "우리는 제주의 자연을 지키는 환경수비대예요!",
+    "아름다운 제주를 위해 오늘 할 수 있는 일을 찾아봐요.",
+    "일회용 컵 대신 내 컵을 사용해요.",
+    "외출할 때는 텀블러를 챙겨요.",
+    "장을 보러 갈 때는 장바구니를 가져가요.",
+    "에코백은 한 번 쓰고 버리지 않고 여러 번 사용해요.",
+    "가까운 거리는 걸어 다니며 주변의 자연도 살펴봐요.",
+    "쓰레기는 종류에 맞게 나누어 버려요.",
+    "분리배출을 하기 전에 용기 안의 내용물을 비워요.",
+    "일회용품을 줄이는 작은 습관을 함께 실천해요.",
+    "실내 온도를 알맞게 유지해 에너지를 아껴요.",
+    "우리 반이 실천할 환경 보호 약속을 정해 봐요.",
+    "제주의 바다와 숲을 지키는 방법을 친구에게 알려 줘요.",
+    "환경 보호는 오늘 나의 작은 실천에서 시작돼요.",
+    "동홍초등학교 5학년은 타자도 잘 치고 마음도 따뜻해요.",
+    "쉬는 시간 10분, 오늘은 내가 우리 반 타자왕이다!",
+    "운동장에서 친구들과 피구를 하면 시간이 금방 지나가요.",
+    "오늘 급식에는 내가 좋아하는 반찬이 나올까요?",
+    "도서관에서 빌린 책은 약속한 날짜에 돌려줘요.",
+    "체육 시간에 줄넘기를 어제보다 세 번 더 넘었어요.",
+    "소풍 가는 날 아침, 김밥 냄새에 눈이 번쩍 떠졌어요.",
+    "쉬는 시간이 끝나는 종이 울리면 자리에 바로 앉아요.",
+    "친구의 발표를 들을 때는 눈을 맞추고 귀를 기울여요.",
+    "모르는 문제는 질문하고, 아는 것은 함께 나눠요.",
+    "친구가 힘들어할 때 먼저 손을 내밀어 줘요.",
+    "장난이라도 친구가 싫다고 하면 멈춰요.",
+    "고마워, 미안해, 괜찮아! 따뜻한 말부터 건네요.",
+    "서로 생각이 달라도 좋은 친구가 될 수 있어요.",
+    "혼자서는 어려운 일도 함께하면 해낼 수 있어요.",
+    "우리 반의 멋진 점을 하나씩 찾아 칭찬해 봐요.",
+    "가는 말이 고와야 오는 말이 곱다.",
+    "백지장도 맞들면 낫다.",
+    "천 리 길도 한 걸음부터 시작해요.",
+    "조금씩 꾸준히 연습하면 실력이 쑥쑥 자라요.",
+    "틀린 글자가 있어도 당황하지 말고 침착하게 고치면 돼요.",
+    "서두르지 말고 정확하게! 그다음에 빠르게!",
+    "컴퓨터실에서는 자판을 세게 두드리지 않아요.",
+    "친구의 기록을 넘지 못해도 어제의 나보다 자라면 돼요.",
+    "실수는 괜찮아요. 다시 도전할 기회가 있으니까요.",
+    "오늘도 열심히 연습한 나, 정말 대단해!",
+    "제주의 기온은 어떻게 달라졌을까요?",
+    "기온 데이터를 모아 제주의 변화를 살펴봐요.",
+    "데이터를 모을 때는 언제 어디에서 측정했는지 확인해요.",
+    "기온을 비교할 때는 같은 기준의 자료를 사용해요.",
+    "수집한 자료에서 우리에게 필요한 항목을 찾아봐요.",
+    "데이터 전처리는 분석하기 전에 자료를 다듬는 일이에요.",
+    "필요한 항목만 남기면 데이터를 살펴보기 쉬워져요.",
+    "자료를 알아보기 쉽게 고치는 것도 데이터 전처리예요.",
+    "평균기온은 일정한 기간의 기온을 평균한 값이에요.",
+    "평균 최고기온은 날마다 가장 높았던 기온을 모아 평균한 값이에요.",
+    "표와 차트를 보며 기온이 어떻게 변했는지 이야기해요.",
+    "환경 데이터를 살펴보고 자연을 지킬 방법을 생각해요.",
+  ];
+
+  // 타수 계산: 한글은 자모 입력 수로, 나머지는 글자당 1타
+  const JUNG = [1,1,1,1,1,1,1,1,1,2,2,2,1,1,2,2,2,1,1,2,1];
+  const JONG = [0,1,1,2,1,2,2,1,1,2,2,2,2,2,2,2,1,1,2,1,1,1,1,1,1,1,1,1];
+  function strokes(ch) {
+    const code = ch.charCodeAt(0);
+    if (code >= 0xAC00 && code <= 0xD7A3) {
+      const i = code - 0xAC00;
+      const jong = i % 28, jung = Math.floor(i / 28) % 21;
+      return 1 + JUNG[jung] + JONG[jong];
+    }
+    return 1;
+  }
+
+  const $ = (id) => document.getElementById(id);
+  const nameInput = $('nameInput'), typeInput = $('typeInput'), targetEl = $('target');
+  // 이름은 자동 저장하거나 복원하지 않고 매번 직접 입력해요.
+  nameInput.value = '';
+
+  let limit = 60;
+  $('timeSeg').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    if (running) return;
+    limit = +b.dataset.t; syncSeg($('timeSeg'), 't', String(limit)); $('mTime').textContent = limit;
+  }));
+  function syncSeg(seg, key, val) {
+    seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset[key] === val)));
+  }
+
+  // 게임 상태
+  let running = false, startAt = 0, timer = null, composing = false;
+  let order = [], idx = 0, target = '';
+  let doneStrokes = 0, doneChars = 0, doneCorrect = 0, finished = 0;
+
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  function renderTarget(typed) {
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < target.length; i++) {
+      const s = document.createElement('span');
+      s.className = 'c'; s.textContent = target[i];
+      if (i < typed.length) {
+        const last = (i === typed.length - 1) && composing;
+        if (!last) s.classList.add(typed[i] === target[i] ? 'ok' : 'bad');
+        else s.classList.add('cur');
+      } else if (i === typed.length) s.classList.add('cur');
+      frag.appendChild(s);
+    }
+    targetEl.replaceChildren(frag);
+  }
+
+  function partialStats(typed) {
+    let correct = 0, st = 0;
+    for (let i = 0; i < typed.length; i++) {
+      if (i < target.length && typed[i] === target[i]) { correct++; st += strokes(typed[i]); }
+    }
+    return { chars: typed.length, correct, st };
+  }
+
+  function currentNumbers() {
+    const p = partialStats(typeInput.value);
+    const chars = doneChars + p.chars, correct = doneCorrect + p.correct, st = doneStrokes + p.st;
+    const elapsed = Math.max(1, (Date.now() - startAt) / 1000);
+    const cpm = startAt ? Math.round(st * 60 / elapsed) : 0;
+    const acc = chars ? correct / chars : 1;
+    return { cpm, acc, chars };
+  }
+
+  function updateMeters() {
+    const n = currentNumbers();
+    $('mCpm').textContent = n.cpm;
+    $('mAcc').textContent = Math.round(n.acc * 100) + '%';
+  }
+
+  function nextSentence() {
+    if (idx >= order.length) { order = shuffle(order); idx = 0; }
+    target = SENTENCES[order[idx++]];
+    typeInput.value = '';
+    renderTarget('');
+  }
+
+  function commitSentence() {
+    const p = partialStats(typeInput.value);
+    doneChars += Math.max(p.chars, target.length);   // 덜 친 글자는 틀린 글자로
+    doneCorrect += p.correct; doneStrokes += p.st; finished++;
+    $('doneCount').textContent = finished + '문장 완성';
+    nextSentence();
+  }
+
+  function start() {
+    if (running) return;
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); $('hint').textContent = '먼저 이름을 써 주세요!'; return; }
+    running = true; composing = false; startAt = 0; doneStrokes = doneChars = doneCorrect = finished = 0;
+    order = shuffle(SENTENCES.map((_, i) => i)); idx = 0;
+    $('doneCount').textContent = '';
+    $('hint').textContent = '첫 글자를 치면 시간이 가기 시작해요. 정확하게, 그리고 빠르게!';
+    $('startBtn').hidden = true; $('stopBtn').hidden = false;
+    $('mTime').textContent = limit; $('bar').style.width = '100%';
+    typeInput.readOnly = false; typeInput.placeholder = '여기에 똑같이 입력하세요';
+    nextSentence(); updateMeters(); typeInput.focus();
+  }
+
+  function tick() {
+    const left = Math.max(0, limit - (Date.now() - startAt) / 1000);
+    $('mTime').textContent = Math.ceil(left);
+    $('bar').style.width = (left / limit * 100) + '%';
+    updateMeters();
+    if (left <= 0) finish();
+  }
+
+  function finish() {
+    clearInterval(timer); timer = null;
+    const n = startAt ? currentNumbers() : { cpm: 0, acc: 1, chars: 0 };
+    running = false; typeInput.readOnly = true;
+    typeInput.placeholder = '여기를 눌러 다시 시작하세요';
+    $('startBtn').hidden = false; $('stopBtn').hidden = true;
+    $('startBtn').textContent = '다시 시작!';
+    if (!startAt || n.chars < 5) { $('hint').textContent = '너무 짧게 쳤어요. 다시 도전해 볼까요?'; return; }
+    const score = Math.round(n.cpm * n.acc);
+    showResult({ name: nameInput.value.trim(), score, cpm: n.cpm, acc: Math.round(n.acc * 100), date: Date.now() });
+  }
+
+  typeInput.addEventListener('focus', () => { if (!running) start(); });
+  nameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) {
+      e.preventDefault(); start();
+    }
+  });
+  typeInput.addEventListener('compositionstart', () => { composing = true; });
+  typeInput.addEventListener('compositionend', () => { composing = false; onInput(); });
+  typeInput.addEventListener('input', onInput);
+  function onInput() {
+    if (!running) return;
+    if (!startAt && typeInput.value.length) { startAt = Date.now(); timer = setInterval(tick, 200); }
+    const v = typeInput.value;
+    renderTarget(v);
+    updateMeters();
+    if (!composing && v === target) commitSentence();
+  }
+  typeInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && running && !e.isComposing && e.keyCode !== 229) {
+      e.preventDefault();
+      if (typeInput.value.length) commitSentence();
+    }
+  });
+  $('startBtn').addEventListener('click', start);
+  $('stopBtn').addEventListener('click', finish);
+
+  // 순위판 (Firebase Firestore에 저장되어 모든 기기에서 같은 순위를 봐요)
+  let board = [], boardReady = false;
+  function keyOf(r) { return r.name; }
+  function sortBoard(b) { return b.slice().sort((a, x) => x.score - a.score || x.acc - a.acc); }
+
+  onSnapshot(scoresCol, (snap) => {
+    board = snap.docs.map(d => d.data());
+    boardReady = true;
+    $('boardNote').textContent = '모든 컴퓨터가 함께 쓰는 순위예요. 한 사람당 가장 좋은 기록만 남아요. (같은 이름은 같은 사람으로 봐요)';
+    renderBoard(lastHighlight);
+  }, () => {
+    $('boardNote').textContent = '순위판에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.';
+  });
+
+  let lastHighlight = null;
+  function renderBoard(highlight) {
+    lastHighlight = highlight || lastHighlight;
+    highlight = lastHighlight;
+    const sorted = sortBoard(board);
+    const king = $('king'), ranks = $('ranks');
+    if (!sorted.length) {
+      king.className = 'king empty'; king.textContent = boardReady ? '아직 타자왕이 없어요. 첫 번째 타자왕이 되어 보세요!' : '순위판을 불러오는 중이에요...';
+      ranks.replaceChildren(); return;
+    }
+    const k = sorted[0];
+    king.className = 'king';
+    king.innerHTML = '<div class="crown">👑</div><div><div class="name"></div><div class="sub"></div></div><div class="score"></div>';
+    king.querySelector('.name').textContent = k.name + ' 타자왕';
+    king.querySelector('.sub').textContent = '동홍초 5학년 · ' + k.cpm + '타/분 · 정확도 ' + k.acc + '%';
+    king.querySelector('.score').textContent = k.score + '점';
+    const medals = ['👑', '🥈', '🥉'];
+    const frag = document.createDocumentFragment();
+    sorted.slice(0, 10).forEach((r, i) => {
+      const li = document.createElement('li');
+      if (highlight && keyOf(r) === highlight) li.classList.add('me');
+      li.innerHTML = '<span class="n"></span><span class="who"></span><span class="pts"><small></small></span>';
+      li.querySelector('.n').textContent = i < 3 ? medals[i] : String(i + 1);
+      li.querySelector('.who').textContent = r.name;
+      li.querySelector('.pts').prepend(document.createTextNode(r.score));
+      li.querySelector('.pts small').textContent = r.cpm + '타 · ' + r.acc + '%';
+      frag.appendChild(li);
+    });
+    ranks.replaceChildren(frag);
+  }
+
+  function escapeHtml(t) { return t.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+  async function showResult(rec) {
+    const key = keyOf(rec);
+    const oldTop = sortBoard(board)[0];
+    const ref = doc(scoresCol, encodeURIComponent(key));
+    $('rTitle').textContent = '기록을 올리는 중...';
+    $('rScore').textContent = rec.score; $('rCpm').textContent = rec.cpm; $('rAcc').textContent = rec.acc + '%';
+    $('rMsg').textContent = '';
+    $('result').hidden = false; $('againBtn').focus();
+    let prev = null, improved = false;
+    try {
+      prev = await runTransaction(db, async (tx) => {
+        const snap = await tx.get(ref);
+        const p = snap.exists() ? snap.data() : null;
+        if (!p || rec.score > p.score) tx.set(ref, { ...rec, date: serverTimestamp() });
+        return p;
+      });
+    } catch (e) {
+      $('rTitle').textContent = '앗, 기록을 올리지 못했어요';
+      $('rMsg').textContent = '인터넷 연결을 확인하고 다시 도전해 주세요.';
+      return;
+    }
+    let msg;
+    if (!prev) { improved = true; msg = '첫 기록이에요! 순위판에 이름이 올라갔어요.'; }
+    else if (rec.score > prev.score) { improved = true; msg = '최고 기록 경신! 지난 기록 <strong>' + prev.score + '점</strong>보다 더 잘 쳤어요.'; }
+    else msg = '지금까지 최고 기록은 <strong>' + prev.score + '점</strong>이에요. 조금만 더 연습하면 넘을 수 있어요!';
+    const merged = board.filter(r => keyOf(r) !== key).concat(improved ? rec : (prev || rec));
+    const rank = sortBoard(merged).findIndex(r => keyOf(r) === key) + 1;
+    const becameKing = rank === 1 && improved && (!oldTop || keyOf(oldTop) !== key);
+    const keptKing = rank === 1 && !becameKing;
+    $('rTitle').textContent = becameKing ? '🎉 새로운 타자왕 탄생!' : (keptKing ? '👑 타자왕 자리를 지켰어요!' : (rec.acc < 80 ? '속도보다 정확도! 다시 도전!' : '잘했어요!'));
+    $('rMsg').innerHTML = '<strong>' + escapeHtml(rec.name) + '</strong> 현재 순위 <strong>' + rank + '위</strong> · ' + msg;
+    renderBoard(key);
+    if (improved && rank <= 3) confetti();
+  }
+  $('againBtn').addEventListener('click', () => { $('result').hidden = true; start(); });
+  $('closeBtn').addEventListener('click', () => { $('result').hidden = true; });
+
+  // 선생님용 초기화: 비밀번호는 Firebase 보안 규칙에서 확인해요
+  $('resetBtn').addEventListener('click', () => { $('confirmBox').hidden = false; $('confirmInput').value = ''; $('confirmError').hidden = true; $('confirmInput').focus(); });
+  $('cancelBtn').addEventListener('click', () => { $('confirmBox').hidden = true; $('confirmInput').value = ''; $('confirmError').hidden = true; });
+  $('confirmBtn').addEventListener('click', async () => {
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'meta', 'reset'), { pw: $('confirmInput').value, at: serverTimestamp() });
+    board.forEach(r => batch.delete(doc(scoresCol, encodeURIComponent(keyOf(r)))));
+    try {
+      await batch.commit();
+      lastHighlight = null; $('confirmBox').hidden = true; $('confirmInput').value = ''; $('confirmError').hidden = true;
+    } catch (e) {
+      $('confirmError').hidden = false; $('confirmInput').focus(); $('confirmInput').select();
+    }
+  });
+
+  // 색종이
+  function confetti() {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const c = $('confetti'), ctx = c.getContext('2d');
+    c.hidden = false; c.width = innerWidth; c.height = innerHeight;
+    const colors = ['#FF7A1A', '#2F7FE6', '#F5B301', '#27A862', '#E0484F', '#A259FF'];
+    const ps = Array.from({ length: 140 }, () => ({ x: Math.random() * c.width, y: -20 - Math.random() * c.height * .5, r: 4 + Math.random() * 6, vx: (Math.random() - .5) * 2, vy: 2 + Math.random() * 3, a: Math.random() * 6.28, va: (Math.random() - .5) * .3, col: colors[Math.floor(Math.random() * colors.length)] }));
+    const t0 = performance.now();
+    (function frame(t) {
+      ctx.clearRect(0, 0, c.width, c.height);
+      ps.forEach(p => { p.x += p.vx; p.y += p.vy; p.a += p.va; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.col; ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx.restore(); });
+      if (t - t0 < 2600) requestAnimationFrame(frame); else { ctx.clearRect(0, 0, c.width, c.height); c.hidden = true; }
+    })(t0);
+  }
+
+  // 시작 화면: 연습 문장 미리 보여 주기
+  target = SENTENCES[0]; renderTarget('');
+  renderBoard();
+})();
+</script>
+</body>
+</html>

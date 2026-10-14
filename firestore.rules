@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function validScore(d) {
+      return d.keys().hasOnly(['name', 'score', 'cpm', 'acc', 'date'])
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 8
+        && d.score is int && d.score >= 0 && d.score <= 2000
+        && d.cpm is int && d.cpm >= 0 && d.cpm <= 2000
+        && d.acc is int && d.acc >= 0 && d.acc <= 100
+        && d.date == request.time;
+    }
+
+    // 순위: 누구나 보기, 새 기록 등록, 더 높은 점수로만 갱신
+    match /scores/{id} {
+      allow read: if true;
+      allow create: if validScore(request.resource.data);
+      allow update: if validScore(request.resource.data)
+        && request.resource.data.name == resource.data.name
+        && request.resource.data.score > resource.data.score;
+      // 같은 배치에서 올바른 비밀번호로 meta/reset 을 쓴 경우에만 삭제(초기화)
+      allow delete: if getAfter(/databases/$(database)/documents/meta/reset).data.at == request.time;
+    }
+
+    // 선생님용 초기화 비밀번호 확인 (읽기 불가)
+    match /meta/reset {
+      allow read: if false;
+      allow write: if request.resource.data.pw == '0815'
+        && request.resource.data.at == request.time;
+    }
+  }
+}
