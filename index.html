@@ -81,7 +81,7 @@
   .track { height: 10px; background: var(--line); border-radius: 999px; overflow: hidden; }
   .track i { display: block; height: 100%; width: 100%; background: var(--accent); border-radius: 999px; transition: width .25s linear; }
 
-  .target { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 3.4vw, 30px); line-height: 1.6; letter-spacing: .01em; word-break: keep-all; overflow-wrap: anywhere; min-height: 3.2em; }
+  .target { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 3.4vw, 30px); line-height: 1.6; letter-spacing: .01em; word-break: keep-all; overflow-wrap: anywhere; min-height: 3.2em; user-select: none; -webkit-user-select: none; }
   .target .c { border-radius: 4px; padding: 0 1px; }
   .target .c.ok { color: var(--ok); }
   .target .c.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); text-decoration: underline wavy; }
@@ -523,7 +523,7 @@ const scoresCol = collection(db, "scores");
   function nextSentence() {
     if (idx >= order.length) { order = shuffle(order); idx = 0; }
     target = SENTENCES[order[idx++]];
-    typeInput.value = '';
+    typeInput.value = ''; lastValue = '';
     renderTarget('');
   }
 
@@ -578,8 +578,19 @@ const scoresCol = collection(db, "scores");
   typeInput.addEventListener('compositionstart', () => { composing = true; });
   typeInput.addEventListener('compositionend', () => { composing = false; onInput(); });
   typeInput.addEventListener('input', onInput);
+
+  // 복사·붙여넣기 막기: 문장은 선택·복사할 수 없고, 입력칸에는 붙여넣기·끌어다 놓기가 안 돼요
+  const noPaste = (e) => { e.preventDefault(); $('hint').textContent = '복사해서 붙여넣기는 할 수 없어요. 직접 타자로 쳐 보세요!'; };
+  ['copy', 'cut', 'dragstart', 'contextmenu'].forEach(t => targetEl.addEventListener(t, (e) => e.preventDefault()));
+  ['paste', 'drop', 'contextmenu'].forEach(t => typeInput.addEventListener(t, noPaste));
+  typeInput.addEventListener('beforeinput', (e) => {
+    if (/^insert(FromPaste|FromDrop|ReplacementText|FromYank)/.test(e.inputType)) noPaste(e);
+  });
+  let lastValue = '';
   function onInput() {
     if (!running) return;
+    if (!composing && typeInput.value.length - lastValue.length > 3) { typeInput.value = lastValue; noPaste(new Event('x')); return; }
+    lastValue = typeInput.value;
     if (!startAt && typeInput.value.length) { startAt = Date.now(); timer = setInterval(tick, 200); }
     const v = typeInput.value;
     renderTarget(v);
