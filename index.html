@@ -300,12 +300,12 @@
 <div class="wrap">
   <header>
     <div>
-      <div class="school"><span>동홍초등학교</span>5학년 쉬는시간 타자 대회</div>
+      <div class="school"><span>초등학생</span>쉬는시간 타자 대회</div>
       <h1>내가 우리반 <em>타자왕</em></h1>
     </div>
     <div class="tagline">한 글자씩 쌓아 올리는 실력! 우리 반 타자왕에 도전해 봐.</div>
   </header>
-  <div class="world-status"><span>동홍초 5학년 월드</span><span>오늘의 모험 · 타자 연습</span></div>
+  <div class="world-status"><span>타자왕 월드</span><span>오늘의 모험 · 타자 연습</span></div>
   <div class="grid">
     <section class="stage" aria-label="타자 연습">
       <div class="panel-heading"><h2>타자 연습장</h2><small>한 글자씩, 차근차근!</small></div>
@@ -339,7 +339,7 @@
     </section>
 
     <aside class="board" aria-label="순위판">
-      <div class="board-kicker">도전! 동홍초 타자왕</div>
+      <div class="board-kicker">도전! 우리 반 타자왕</div>
       <h2>우리 반 명예의 전당 <small>순위판 · 점수 = 타/분 × 정확도</small></h2>
       <div class="king empty" id="king">아직 타자왕이 없어요. 첫 번째 타자왕이 되어 보세요!</div>
       <ol class="ranks" id="ranks"></ol>
@@ -408,7 +408,7 @@ const scoresCol = collection(db, "scores");
     "우리 반이 실천할 환경 보호 약속을 정해 봐요.",
     "제주의 바다와 숲을 지키는 방법을 친구에게 알려 줘요.",
     "환경 보호는 오늘 나의 작은 실천에서 시작돼요.",
-    "동홍초등학교 5학년은 타자도 잘 치고 마음도 따뜻해요.",
+    "우리 반 친구들은 타자도 잘 치고 마음도 따뜻해요.",
     "쉬는 시간 10분, 오늘은 내가 우리 반 타자왕이다!",
     "운동장에서 친구들과 피구를 하면 시간이 금방 지나가요.",
     "오늘 급식에는 내가 좋아하는 반찬이 나올까요?",
@@ -634,7 +634,7 @@ const scoresCol = collection(db, "scores");
     king.className = 'king';
     king.innerHTML = '<div class="crown">👑</div><div><div class="name"></div><div class="sub"></div></div><div class="score"></div>';
     king.querySelector('.name').textContent = k.name + ' 타자왕';
-    king.querySelector('.sub').textContent = '동홍초 5학년 · ' + k.cpm + '타/분 · 정확도 ' + k.acc + '%';
+    king.querySelector('.sub').textContent = k.cpm + '타/분 · 정확도 ' + k.acc + '%';
     king.querySelector('.score').textContent = k.score + '점';
     const medals = ['👑', '🥈', '🥉'];
     const frag = document.createDocumentFragment();

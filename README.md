@@ -1,6 +1,6 @@
 # 내가 우리반 타자왕
 
-동홍초등학교 5학년 쉬는시간용 한글 타자 연습 페이지입니다. 파일 하나(`index.html`)로 동작하며, 순위는 Firebase(Firestore, 프로젝트 `typingking`)에 저장되어 모든 기기에서 같은 순위판을 봅니다.
+초등학생 쉬는시간용 한글 타자 연습 페이지입니다. 파일 하나(`index.html`)로 동작하며, 순위는 Firebase(Firestore, 프로젝트 `typingking`)에 저장되어 모든 기기에서 같은 순위판을 봅니다.
 
 ## 깃허브에 올려서 공유하기 (GitHub Pages)
 
